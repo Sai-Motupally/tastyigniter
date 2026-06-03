@@ -1,10 +1,9 @@
 #!/bin/bash
 set -e
-
 cd /var/www/html
 
-echo "==> Writing .env file..."
-cat > /var/www/html/.env << ENVEOF
+echo "==> [1/9] Writing .env..."
+cat > .env << ENVEOF
 APP_NAME="TastyIgniter"
 APP_ENV=production
 APP_KEY=${APP_KEY}
@@ -24,35 +23,31 @@ IGNITER_SITE_NAME=${IGNITER_SITE_NAME:-My Restaurant}
 IGNITER_SITE_URL=${APP_URL:-https://tastyigniter-7bj4.onrender.com}
 ENVEOF
 
-echo "==> Running composer install (no scripts, no autoloader)..."
+echo "==> [2/9] composer install --no-scripts --no-autoloader..."
 COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-scripts --no-autoloader
 
-echo "==> Dumping optimized autoloader..."
-COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-interaction --optimize --no-scripts
+echo "==> [3/9] composer dump-autoload..."
+COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-interaction --optimize
 
-echo "==> Discovering packages..."
-php artisan package:discover --ansi || true
+echo "==> [4/9] key:generate..."
+php artisan key:generate --force --no-interaction
 
-echo "==> Generating app key if missing..."
-php artisan key:generate --force --no-interaction || true
+echo "==> [5/9] package:discover..."
+php artisan package:discover --ansi
 
-echo "==> Clearing and caching config..."
-php artisan config:clear || true
-php artisan config:cache || true
-php artisan route:cache || true
+echo "==> [6/9] config:cache + route:cache..."
+php artisan config:cache
+php artisan route:cache
 
-echo "==> Running migrations..."
+echo "==> [7/9] migrate..."
 php artisan migrate --force --no-interaction
 
-echo "==> Running TastyIgniter install..."
+echo "==> [8/9] igniter:install..."
 php artisan igniter:install --no-interaction || true
 
-echo "==> Linking storage..."
+echo "==> [9/9] storage:link + permissions + start..."
 php artisan storage:link --force || true
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
 
-echo "==> Fixing permissions..."
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-
-echo "==> Starting services..."
 exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.conf
