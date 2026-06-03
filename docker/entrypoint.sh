@@ -3,9 +3,6 @@ set -e
 
 cd /var/www/html
 
-echo "==> Running composer install..."
-COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
-
 echo "==> Writing .env file..."
 cat > /var/www/html/.env << ENVEOF
 APP_NAME="TastyIgniter"
@@ -26,6 +23,12 @@ IGNITER_ADMIN_PASSWORD=${IGNITER_ADMIN_PASSWORD:-Admin@1234}
 IGNITER_SITE_NAME=${IGNITER_SITE_NAME:-My Restaurant}
 IGNITER_SITE_URL=${APP_URL:-https://tastyigniter-7bj4.onrender.com}
 ENVEOF
+
+echo "==> Running composer install (no scripts)..."
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+echo "==> Running post-install scripts manually..."
+php artisan package:discover --ansi || true
 
 echo "==> Generating app key if missing..."
 php artisan key:generate --force --no-interaction || true
