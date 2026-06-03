@@ -24,10 +24,13 @@ IGNITER_SITE_NAME=${IGNITER_SITE_NAME:-My Restaurant}
 IGNITER_SITE_URL=${APP_URL:-https://tastyigniter-7bj4.onrender.com}
 ENVEOF
 
-echo "==> Running composer install (no scripts)..."
-COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+echo "==> Running composer install (no scripts, no autoloader)..."
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-scripts --no-autoloader
 
-echo "==> Running post-install scripts manually..."
+echo "==> Dumping optimized autoloader..."
+COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-interaction --optimize --no-scripts
+
+echo "==> Discovering packages..."
 php artisan package:discover --ansi || true
 
 echo "==> Generating app key if missing..."
