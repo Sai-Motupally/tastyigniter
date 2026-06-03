@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+cd /var/www/html
+
+echo "==> Running composer install..."
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
+
 echo "==> Writing .env file..."
 cat > /var/www/html/.env << ENVEOF
 APP_NAME="TastyIgniter"
@@ -23,15 +28,10 @@ IGNITER_SITE_URL=${APP_URL:-https://tastyigniter-7bj4.onrender.com}
 ENVEOF
 
 echo "==> Generating app key if missing..."
-if [ -z "$APP_KEY" ]; then
-  php artisan key:generate --force
-fi
+php artisan key:generate --force --no-interaction || true
 
-echo "==> Clearing caches..."
+echo "==> Clearing and caching config..."
 php artisan config:clear || true
-php artisan cache:clear || true
-
-echo "==> Caching config & routes..."
 php artisan config:cache || true
 php artisan route:cache || true
 
@@ -44,9 +44,9 @@ php artisan igniter:install --no-interaction || true
 echo "==> Linking storage..."
 php artisan storage:link --force || true
 
-echo "==> Setting permissions..."
+echo "==> Fixing permissions..."
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-echo "==> Starting supervisor (nginx + php-fpm)..."
+echo "==> Starting services..."
 exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.conf
